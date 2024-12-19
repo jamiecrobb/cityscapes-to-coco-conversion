@@ -17,7 +17,7 @@ except:
     sys.exit(-1)
 
 try:
-    import PIL.Image     as Image
+    import PIL.Image as Image
     import PIL.ImageDraw as ImageDraw
 except:
     print("Failed to import the image processing packages.")
@@ -31,6 +31,7 @@ import numpy as np
 
 from utils.instance_class import *
 from utils.labels import *
+
 
 def findContours(*args, **kwargs):
     """
@@ -49,8 +50,9 @@ def findContours(*args, **kwargs):
 
     return contours, hierarchy
 
+
 def instances2dict_with_polygons(imageFileList, verbose=False):
-    imgCount     = 0
+    imgCount = 0
     instanceDict = {}
 
     if not isinstance(imageFileList, list):
@@ -86,7 +88,8 @@ def instances2dict_with_polygons(imageFileList, verbose=False):
                 polygons = [c.reshape(-1).tolist() for c in contour]
                 instanceObj_dict['contours'] = polygons
 
-            instances[id2label[instanceObj.labelID].name].append(instanceObj_dict)
+            instances[id2label[instanceObj.labelID].name].append(
+                instanceObj_dict)
 
         instanceDict[imageFileName] = instances
         imgCount += 1
@@ -100,6 +103,7 @@ def instances2dict_with_polygons(imageFileList, verbose=False):
 
     return instanceDict
 
+
 def poly_to_box(poly):
     """Convert a polygon into a tight bounding box."""
     x0 = min(min(p[::2]) for p in poly)
@@ -109,11 +113,13 @@ def poly_to_box(poly):
     box_from_poly = [x0, y0, x1, y1]
     return box_from_poly
 
+
 def xyxy_to_xywh(xyxy_box):
     xmin, ymin, xmax, ymax = xyxy_box
     TO_REMOVE = 1
     xywh_box = (xmin, ymin, xmax - xmin + TO_REMOVE, ymax - ymin + TO_REMOVE)
     return xywh_box
+
 
 def convert_cityscapes_instance_only(data_dir, out_dir):
     """Convert from cityscapes format to COCO instance seg format - polygons"""
@@ -156,7 +162,8 @@ def convert_cityscapes_instance_only(data_dir, out_dir):
                 if filename.endswith(polygon_json_file_ending):
 
                     if len(images) % 50 == 0:
-                        print("Processed %s images, %s annotations" % (len(images), len(annotations)))
+                        print("Processed %s images, %s annotations" %
+                              (len(images), len(annotations)))
 
                     json_ann = json.load(open(os.path.join(root, filename)))
 
@@ -169,11 +176,13 @@ def convert_cityscapes_instance_only(data_dir, out_dir):
                                                       data_set.split("/")[-1],
                                                       filename.split('_')[0],
                                                       filename.replace("_gtFine_polygons.json", '_leftImg8bit.png'))
-                    image['seg_file_name'] = filename.replace("_polygons.json", "_instanceIds.png")
+                    image['seg_file_name'] = filename.replace(
+                        "_polygons.json", "_instanceIds.png")
                     images.append(image)
 
                     fullname = os.path.join(root, image['seg_file_name'])
-                    objects = instances2dict_with_polygons([fullname], verbose=False)[fullname]
+                    objects = instances2dict_with_polygons(
+                        [fullname], verbose=False)[fullname]
 
                     for object_cls in objects:
                         if object_cls not in category_instancesonly:
@@ -193,7 +202,8 @@ def convert_cityscapes_instance_only(data_dir, out_dir):
                             ann['id'] = ann_id
                             ann_id += 1
                             ann['image_id'] = image['id']
-                            ann['segmentation'] = obj['contours']
+                            seg = obj['contours']
+                            # ann['segmentation'] = obj['contours']
 
                             if object_cls not in category_dict:
                                 category_dict[object_cls] = cat_id
@@ -202,14 +212,15 @@ def convert_cityscapes_instance_only(data_dir, out_dir):
                             ann['iscrowd'] = 0
                             ann['area'] = obj['pixelCount']
 
-                            xyxy_box = poly_to_box(ann['segmentation'])
+                            xyxy_box = poly_to_box(seg)  # ann['segmentation'])
                             xywh_box = xyxy_to_xywh(xyxy_box)
                             ann['bbox'] = xywh_box
 
                             annotations.append(ann)
 
         ann_dict['images'] = images
-        categories = [{"id": category_dict[name], "name": name} for name in category_dict]
+        categories = [{"id": category_dict[name], "name": name}
+                      for name in category_dict]
         ann_dict['categories'] = categories
         ann_dict['annotations'] = annotations
         print("Num categories: %s" % len(categories))
@@ -223,9 +234,12 @@ def convert_cityscapes_instance_only(data_dir, out_dir):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert dataset')
-    parser.add_argument('--dataset', help="cityscapes", default='cityscapes', type=str)
-    parser.add_argument('--outdir', help="output dir for json files", default='data/cityscapes/annotations', type=str)
-    parser.add_argument('--datadir', help="data dir for annotations to be converted", default="data/cityscapes", type=str)
+    parser.add_argument('--dataset', help="cityscapes",
+                        default='cityscapes', type=str)
+    parser.add_argument('--outdir', help="output dir for json files",
+                        default='data/cityscapes/annotations', type=str)
+    parser.add_argument('--datadir', help="data dir for annotations to be converted",
+                        default="data/cityscapes", type=str)
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
